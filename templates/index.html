@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Vector Database Explorer – ChromaDB management UI with CRUD operations, similarity search, and embedding visualization.">
+    <title>Vector DB Explorer – ChromaDB Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="brand-title">VectorDB</span>
+                    <span class="brand-subtitle">Explorer</span>
+                </div>
+            </div>
+
+            <div class="nav-items">
+                <button class="nav-item active" data-tab="collections" id="navCollections">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Collections
+                </button>
+                <button class="nav-item" data-tab="documents" id="navDocuments">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    Documents
+                </button>
+                <button class="nav-item" data-tab="search" id="navSearch">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Search
+                </button>
+                <button class="nav-item" data-tab="chunking" id="navChunking">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                    </svg>
+                    Chunking
+                </button>
+                <button class="nav-item" data-tab="visualize" id="navVisualize">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+                    </svg>
+                    Visualize
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="model-info" id="modelInfo">
+                    <span class="model-badge">MiniLM-L6-v2</span>
+                    <span class="dim-badge" id="dimBadge">384d</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Mobile Header -->
+            <header class="mobile-header">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                <h1>Vector DB Explorer</h1>
+            </header>
+
+            <!-- Tab: Collections -->
+            <section class="tab-panel active" id="tabCollections">
+                <div class="panel-header">
+                    <div>
+                        <h2>Collections</h2>
+                        <p class="panel-desc">Manage your ChromaDB collections</p>
+                    </div>
+                    <button class="btn btn-primary" id="createCollectionBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        New Collection
+                    </button>
+                </div>
+
+                <!-- Create Collection Form -->
+                <div class="card form-card hidden" id="createCollectionForm">
+                    <h3>Create Collection</h3>
+                    <div class="form-group">
+                        <label for="collectionNameInput">Collection Name</label>
+                        <input type="text" id="collectionNameInput" placeholder="my_collection" pattern="[a-zA-Z0-9_-]+" />
+                        <span class="form-hint">Use alphanumeric characters, underscores, or hyphens</span>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-ghost" id="cancelCreateCollection">Cancel</button>
+                        <button class="btn btn-primary" id="submitCreateCollection">Create</button>
+                    </div>
+                </div>
+
+                <div class="collections-grid" id="collectionsGrid">
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <p>No collections yet</p>
+                        <span>Create a collection to get started</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Documents -->
+            <section class="tab-panel" id="tabDocuments">
+                <div class="panel-header">
+                    <div>
+                        <h2>Documents</h2>
+                        <p class="panel-desc">Insert, update, and manage documents</p>
+                    </div>
+                </div>
+
+                <!-- Collection Selector -->
+                <div class="card">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="docCollectionSelect">Select Collection</label>
+                            <select id="docCollectionSelect"><option value="">-- Select --</option></select>
+                        </div>
+                        <button class="btn btn-primary" id="addDocumentBtn" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add Document
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add Document Form -->
+                <div class="card form-card hidden" id="addDocumentForm">
+                    <h3>Add Document</h3>
+                    <div class="form-group">
+                        <label for="docIdInput">Document ID (optional)</label>
+                        <input type="text" id="docIdInput" placeholder="Auto-generated if empty" />
+                    </div>
+                    <div class="form-group">
+                        <label for="docTextInput">Document Text</label>
+                        <textarea id="docTextInput" rows="4" placeholder="Enter the document text..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-ghost" id="cancelAddDoc">Cancel</button>
+                        <button class="btn btn-primary" id="submitAddDoc">Insert</button>
+                    </div>
+                </div>
+
+                <!-- Documents List -->
+                <div class="documents-list" id="documentsList">
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        </svg>
+                        <p>Select a collection to view documents</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Search -->
+            <section class="tab-panel" id="tabSearch">
+                <div class="panel-header">
+                    <div>
+                        <h2>Similarity Search</h2>
+                        <p class="panel-desc">Find similar documents using vector similarity</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label for="searchCollectionSelect">Collection</label>
+                        <select id="searchCollectionSelect"><option value="">-- Select --</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="searchQueryInput">Search Query</label>
+                        <textarea id="searchQueryInput" rows="3" placeholder="Enter a natural language query..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="topKInput">Top K Results</label>
+                            <input type="number" id="topKInput" value="5" min="1" max="20" />
+                        </div>
+                        <button class="btn btn-primary" id="searchBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Search
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-results" id="searchResults"></div>
+            </section>
+
+            <!-- Tab: Chunking -->
+            <section class="tab-panel" id="tabChunking">
+                <div class="panel-header">
+                    <div>
+                        <h2>Text Chunking</h2>
+                        <p class="panel-desc">Visualize how text is split into chunks for embedding</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label for="chunkTextInput">Text to Chunk</label>
+                        <textarea id="chunkTextInput" rows="6" placeholder="Paste your text here to see how it gets chunked..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="chunkMethodSelect">Method</label>
+                            <select id="chunkMethodSelect">
+                                <option value="sentence">By Sentences</option>
+                                <option value="character">By Characters</option>
+                                <option value="paragraph">By Paragraphs</option>
+                                <option value="word">By Words</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="chunkSizeGroup">
+                            <label for="chunkSizeInput">Chunk Size</label>
+                            <input type="number" id="chunkSizeInput" value="3" min="1" />
+                            <span class="form-hint" id="chunkSizeHint">sentences per chunk</span>
+                        </div>
+                        <button class="btn btn-primary" id="chunkBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                            Chunk Text
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chunk Stats -->
+                <div class="card hidden" id="chunkStatsCard">
+                    <h3>Chunking Statistics</h3>
+                    <div class="stats-grid" id="chunkStats"></div>
+                </div>
+
+                <!-- Chunks Display -->
+                <div class="chunks-display" id="chunksDisplay"></div>
+            </section>
+
+            <!-- Tab: Visualize -->
+            <section class="tab-panel" id="tabVisualize">
+                <div class="panel-header">
+                    <div>
+                        <h2>Embedding Visualization</h2>
+                        <p class="panel-desc">Visualize embedding space and similarity relationships</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label for="vizTextsInput">Texts to Visualize (one per line)</label>
+                        <textarea id="vizTextsInput" rows="6" placeholder="Enter texts, one per line:&#10;The cat sat on the mat&#10;A dog ran in the park&#10;Machine learning is fascinating&#10;Deep learning uses neural networks"></textarea>
+                    </div>
+                    <button class="btn btn-primary" id="visualizeBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+                        Visualize Embeddings
+                    </button>
+                </div>
+
+                <!-- Visualization Canvas -->
+                <div class="card hidden" id="vizCard">
+                    <h3>2D Embedding Space (PCA Projection)</h3>
+                    <div class="viz-container">
+                        <canvas id="vizCanvas" width="700" height="450"></canvas>
+                    </div>
+                </div>
+
+                <!-- Similarity Matrix -->
+                <div class="card hidden" id="simMatrixCard">
+                    <h3>Cosine Similarity Matrix</h3>
+                    <div class="matrix-container" id="simMatrix"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Edit Document Modal -->
+    <div class="modal-overlay hidden" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Document</h3>
+                <button class="modal-close" id="closeEditModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Document ID</label>
+                    <input type="text" id="editDocId" disabled />
+                </div>
+                <div class="form-group">
+                    <label for="editDocText">Document Text</label>
+                    <textarea id="editDocText" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="cancelEdit">Cancel</button>
+                <button class="btn btn-primary" id="submitEdit">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
